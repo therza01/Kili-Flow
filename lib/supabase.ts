@@ -16,26 +16,34 @@ export const mockCommunityPosts = [
   {
     id: '1',
     user_id: '1',
-    estate: 'Kilimani',
-    content: 'Anyone else experiencing power issues on Kilimani Road? It\'s been out for 2 hours now.',
+    estate: 'Yaya Center',
+    content: 'Anyone else experiencing power issues on Kilimani Road? It\'s been out for 2 hours now. My UPS is running low!',
     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    user: { name: 'John Doe' }
+    user: { name: 'John Doe', estate: 'Yaya Center' }
   },
   {
     id: '2',
     user_id: '2',
-    estate: 'Kilimani',
-    content: 'Water truck will be at the community center tomorrow at 10 AM for those affected by the water shortage.',
+    estate: 'Yaya Center',
+    content: 'Water truck will be at the community center tomorrow at 10 AM for those affected by the water shortage. Bring your containers!',
     created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    user: { name: 'Jane Smith' }
+    user: { name: 'Jane Smith', estate: 'Yaya Center' }
   },
   {
     id: '3',
     user_id: '3',
-    estate: 'Kilimani',
-    content: 'Great news! The internet connectivity issues have been resolved. Thanks to everyone for reporting.',
+    estate: 'Woodlands',
+    content: 'Great news! The internet connectivity issues have been resolved in our area. Thanks to everyone for reporting.',
     created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-    user: { name: 'Mike Johnson' }
+    user: { name: 'Mike Johnson', estate: 'Woodlands' }
+  },
+  {
+    id: '4',
+    user_id: '4',
+    estate: 'Yaya Center',
+    content: 'Lost cat near Yaya Center! Orange tabby, very friendly. Please contact me if you see him. Reward offered! 🐱',
+    created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    user: { name: 'Sarah Wilson', estate: 'Yaya Center' }
   }
 ]
 
@@ -77,7 +85,7 @@ export const mockBusinesses = [
     id: '1',
     name: 'Kilimani Hardware',
     description: 'Your one-stop shop for all hardware needs. Quality tools and materials.',
-    estate: 'Kilimani',
+    estate: 'Kilimani Central',
     contact: '+254712000001',
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   },
@@ -85,7 +93,7 @@ export const mockBusinesses = [
     id: '2',
     name: 'Fresh Groceries',
     description: 'Fresh fruits and vegetables daily. Farm to table quality.',
-    estate: 'Kilimani',
+    estate: 'Yaya Center',
     contact: '+254712000002',
     created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
   },
@@ -93,7 +101,7 @@ export const mockBusinesses = [
     id: '3',
     name: 'Tech Repair Hub',
     description: 'Professional phone and laptop repair services. Quick turnaround.',
-    estate: 'Kilimani',
+    estate: 'Woodlands',
     contact: '+254712000003',
     created_at: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
   }
@@ -123,6 +131,8 @@ export type User = {
   whatsapp: string
   created_at: string
   estate?: string
+  latitude?: number
+  longitude?: number
 }
 
 export type CommunityPost = {
@@ -131,7 +141,12 @@ export type CommunityPost = {
   estate: string
   content: string
   created_at: string
-  user?: User
+  latitude?: number
+  longitude?: number
+  user?: {
+    name: string
+    estate?: string
+  }
 }
 
 export type Business = {
