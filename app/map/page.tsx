@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, MapPin, RefreshCw } from 'lucide-react'
 import Link from "next/link"
-import { supabase, Issue, mockIssues, isSupabaseConfigured } from "@/lib/supabase"
+import { issuesApi, Issue } from "@/lib/api"
 import { IssueCard } from "@/components/IssueCard"
 
 export default function MapPage() {
@@ -15,28 +15,17 @@ export default function MapPage() {
   const fetchIssues = async () => {
     setLoading(true)
     try {
-      // Check if Supabase is properly configured
-      if (!isSupabaseConfigured()) {
-        console.log('Using mock data - Supabase not configured')
-        setIssues(mockIssues)
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('issues')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.log('Supabase error, falling back to mock data:', error.message)
-        setIssues(mockIssues)
+      const response = await issuesApi.getAll('Kilimani', 50)
+      
+      if (response.success && response.data) {
+        setIssues(response.data.issues)
       } else {
-        setIssues(data || [])
+        console.error('Failed to fetch issues:', response.error)
+        setIssues([])
       }
     } catch (err) {
-      console.log('Network error, using mock data:', err)
-      setIssues(mockIssues)
+      console.error('Network error:', err)
+      setIssues([])
     } finally {
       setLoading(false)
     }
@@ -44,24 +33,6 @@ export default function MapPage() {
 
   useEffect(() => {
     fetchIssues()
-
-    // Only set up real-time subscription if Supabase is configured
-    if (isSupabaseConfigured()) {
-      const subscription = supabase
-        .channel('issues')
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'issues' },
-          (payload) => {
-            console.log('Real-time update:', payload)
-            fetchIssues()
-          }
-        )
-        .subscribe()
-
-      return () => {
-        subscription.unsubscribe()
-      }
-    }
   }, [])
 
   return (

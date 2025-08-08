@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, MapPin, Camera } from 'lucide-react'
 import Link from "next/link"
-import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { issuesApi, userApi } from "@/lib/api"
 import { WhatsAppAlert } from "@/components/WhatsAppAlert"
 
 export default function ReportPage() {
@@ -34,43 +34,31 @@ export default function ReportPage() {
     setIsSubmitting(true)
   
     try {
-      // Check if Supabase is properly configured
-      if (!isSupabaseConfigured()) {
-        // Simulate successful submission in demo mode
-        await new Promise(resolve => setTimeout(resolve, 1000))
+      // Get user profile for user_id
+      const userProfile = localStorage.getItem('gridpulse_user')
+      let userId = null
       
-        toast({
-          title: "Issue Reported Successfully! (Demo Mode)",
-          description: "Your report has been submitted to the authorities.",
-        })
-
-        setShowWhatsAppAlert(true)
-        setType("")
-        setDescription("")
-        setLocation("Kilimani")
-        setIsSubmitting(false)
-        return
+      if (userProfile) {
+        const parsed = JSON.parse(userProfile)
+        userId = parsed.id
       }
 
-      const { data, error } = await supabase
-        .from('issues')
-        .insert([
-          {
-            type,
-            description,
-            location,
-            latitude: -1.2860 + (Math.random() - 0.5) * 0.01,
-            longitude: 36.7871 + (Math.random() - 0.5) * 0.01,
-            status: 'reported'
-          }
-        ])
-        .select()
+      const response = await issuesApi.create({
+        user_id: userId,
+        type,
+        description,
+        location,
+        latitude: -1.2860 + (Math.random() - 0.5) * 0.01,
+        longitude: 36.7871 + (Math.random() - 0.5) * 0.01,
+      })
 
-      if (error) throw error
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to submit issue')
+      }
 
       toast({
         title: "Issue Reported Successfully!",
-        description: "Your report has been submitted to the authorities.",
+        description: response.message || "Your report has been submitted to the authorities.",
       })
 
       setShowWhatsAppAlert(true)
@@ -81,7 +69,7 @@ export default function ReportPage() {
       console.error('Error submitting issue:', err)
       toast({
         title: "Submission Failed",
-        description: "Please try again later.",
+        description: err instanceof Error ? err.message : "Please try again later.",
         variant: "destructive",
       })
     } finally {

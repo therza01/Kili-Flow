@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Users, Send, MessageCircle } from 'lucide-react'
 import Link from "next/link"
-import { supabase, CommunityPost, mockCommunityPosts, isSupabaseConfigured } from "@/lib/supabase"
+import { communityApi, CommunityPost } from "@/lib/api"
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState<CommunityPost[]>([])
@@ -20,33 +20,17 @@ export default function CommunityPage() {
   const fetchPosts = async () => {
     setLoading(true)
     try {
-      // Check if Supabase is properly configured
-      if (!isSupabaseConfigured()) {
-        // Use mock data when Supabase is not configured
-        console.log('Using mock data - Supabase not configured')
-        setPosts(mockCommunityPosts)
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('community_posts')
-        .select(`
-        *,
-        user:users(name)
-      `)
-        .eq('estate', 'Kilimani')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.log('Supabase error, falling back to mock data:', error.message)
-        setPosts(mockCommunityPosts)
+      const response = await communityApi.getPosts('Kilimani', 20)
+      
+      if (response.success && response.data) {
+        setPosts(response.data.posts)
       } else {
-        setPosts(data || [])
+        console.error('Failed to fetch posts:', response.error)
+        setPosts([])
       }
     } catch (err) {
-      console.log('Network error, using mock data:', err)
-      setPosts(mockCommunityPosts)
+      console.error('Network error:', err)
+      setPosts([])
     } finally {
       setLoading(false)
     }
@@ -68,56 +52,19 @@ export default function CommunityPage() {
         userName = parsed.name
       }
 
-      // Check if Supabase is properly configured
-      if (!isSupabaseConfigured()) {
-        // Add to mock data for demo
-        const newMockPost = {
-          id: Date.now().toString(),
-          user_id: userId || 'demo-user',
-          estate: 'Kilimani',
-          content: newPost,
-          created_at: new Date().toISOString(),
-          user: { name: userName }
-        }
-        
-        setPosts(prev => [newMockPost, ...prev])
-        toast({
-          title: "Post Shared! (Demo Mode)",
-          description: "Your message has been posted to the community.",
-        })
-        setNewPost("")
-        setPosting(false)
-        return
+      const response = await communityApi.createPost({
+        user_id: userId,
+        estate: 'Kilimani',
+        content: newPost
+      })
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to create post')
       }
-
-      // Real Supabase logic
-      if (!userId) {
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .insert([{ name: userName, estate: 'Kilimani' }])
-          .select()
-          .single()
-
-        if (userError) throw userError
-        userId = userData.id
-        localStorage.setItem('gridpulse_user', JSON.stringify(userData))
-      }
-
-      const { error } = await supabase
-        .from('community_posts')
-        .insert([
-          {
-            user_id: userId,
-            estate: 'Kilimani',
-            content: newPost
-          }
-        ])
-
-      if (error) throw error
 
       toast({
         title: "Post Shared!",
-        description: "Your message has been posted to the community.",
+        description: response.message || "Your message has been posted to the community.",
       })
 
       setNewPost("")
@@ -136,19 +83,6 @@ export default function CommunityPage() {
 
   useEffect(() => {
     fetchPosts()
-
-    // Only set up real-time subscription if Supabase is configured
-    if (isSupabaseConfigured()) {
-      const subscription = supabase
-        .channel('community_posts')
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'community_posts' },
-          () => fetchPosts()
-        )
-        .subscribe()
-
-      return () => subscription.unsubscribe()
-    }
   }, [])
 
   return (

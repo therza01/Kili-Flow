@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { MapPin, Zap, Activity, Users, Building, User } from 'lucide-react'
 import Link from "next/link"
 import { WeatherBox } from "@/components/WeatherBox"
-import { supabase, isSupabaseConfigured, mockIssues } from "@/lib/supabase"
+import { issuesApi } from "@/lib/api"
 
 export default function HomePage() {
   const [issueCount, setIssueCount] = useState(0)
@@ -15,24 +15,17 @@ export default function HomePage() {
   useEffect(() => {
     const getIssueCount = async () => {
       try {
-        if (!isSupabaseConfigured()) {
-          setIssueCount(mockIssues.length)
-          return
-        }
-
-        const { count, error } = await supabase
-          .from('issues')
-          .select('*', { count: 'exact', head: true })
+        const response = await issuesApi.getAll('Kilimani', 1000)
         
-        if (error) {
-          console.log('Supabase error, using mock count:', error.message)
-          setIssueCount(mockIssues.length)
+        if (response.success && response.data) {
+          setIssueCount(response.data.count)
         } else {
-          setIssueCount(count || 0)
+          console.log('API error, using default count:', response.error)
+          setIssueCount(0)
         }
       } catch (err) {
-        console.log('Network error, using mock count:', err)
-        setIssueCount(mockIssues.length)
+        console.log('Network error, using default count:', err)
+        setIssueCount(0)
       }
     }
 

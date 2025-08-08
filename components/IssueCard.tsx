@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Clock, Zap, Droplets, Wifi, Flame } from 'lucide-react'
-import { Issue } from "@/lib/supabase"
+import { Issue } from "@/lib/api"
 
 interface IssueCardProps {
   issue: Issue

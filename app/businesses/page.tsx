@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Building, Phone, MapPin } from 'lucide-react'
 import Link from "next/link"
-import { supabase, Business, mockBusinesses, isSupabaseConfigured } from "@/lib/supabase"
+import { businessesApi, Business } from "@/lib/api"
 
 export default function BusinessesPage() {
   const [businesses, setBusinesses] = useState<Business[]>([])
@@ -15,29 +15,17 @@ export default function BusinessesPage() {
   const fetchBusinesses = async () => {
     setLoading(true)
     try {
-      // Check if Supabase is properly configured
-      if (!isSupabaseConfigured()) {
-        console.log('Using mock data - Supabase not configured')
-        setBusinesses(mockBusinesses)
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('businesses')
-        .select('*')
-        .eq('estate', 'Kilimani')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.log('Supabase error, falling back to mock data:', error.message)
-        setBusinesses(mockBusinesses)
+      const response = await businessesApi.getAll('Kilimani', 20)
+      
+      if (response.success && response.data) {
+        setBusinesses(response.data.businesses)
       } else {
-        setBusinesses(data || [])
+        console.error('Failed to fetch businesses:', response.error)
+        setBusinesses([])
       }
     } catch (err) {
-      console.log('Network error, using mock data:', err)
-      setBusinesses(mockBusinesses)
+      console.error('Network error:', err)
+      setBusinesses([])
     } finally {
       setLoading(false)
     }

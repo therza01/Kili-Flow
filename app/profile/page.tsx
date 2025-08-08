@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, User, Phone, MapPin, Save } from 'lucide-react'
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
+import { userApi } from "@/lib/api"
 
 export default function ProfilePage() {
   const [name, setName] = useState("")
@@ -45,46 +45,34 @@ export default function ProfilePage() {
       const profileData = {
         name: name.trim(),
         whatsapp: whatsapp.trim(),
-        estate
+        estate,
+        latitude: -1.2860,
+        longitude: 36.7871
       }
 
-      if (hasProfile) {
-        // Update existing profile
-        const existingProfile = JSON.parse(localStorage.getItem('gridpulse_user') || '{}')
-        const { error } = await supabase
-          .from('users')
-          .update(profileData)
-          .eq('id', existingProfile.id)
-
-        if (error) throw error
-        
-        localStorage.setItem('gridpulse_user', JSON.stringify({
-          ...existingProfile,
-          ...profileData
-        }))
-      } else {
-        // Create new profile
-        const { data, error } = await supabase
-          .from('users')
-          .insert([profileData])
-          .select()
-          .single()
-
-        if (error) throw error
-        
-        localStorage.setItem('gridpulse_user', JSON.stringify(data))
-        setHasProfile(true)
+      const response = await userApi.create(profileData)
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to save profile')
       }
+      
+      // Update local storage
+      const updatedProfile = {
+        id: response.data?.user_id,
+        ...profileData
+      }
+      localStorage.setItem('gridpulse_user', JSON.stringify(updatedProfile))
+      setHasProfile(true)
 
       toast({
         title: "Profile Saved!",
-        description: "Your profile has been updated successfully.",
+        description: response.message || "Your profile has been updated successfully.",
       })
     } catch (err) {
       console.error('Error saving profile:', err)
       toast({
         title: "Save Failed",
-        description: "Please try again later.",
+        description: err instanceof Error ? err.message : "Please try again later.",
         variant: "destructive",
       })
     } finally {
